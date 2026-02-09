@@ -14,7 +14,27 @@
       "buildResources": "assets"
     },
     "win": {
-      "icon": "logo.ico"
+      "icon": "logo.ico",
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "mac": {
+      "icon": "logo.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "linux": {
+      "icon": "logo.png",
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
+      "category": "Utility"
     }
   },
   "keywords": [],

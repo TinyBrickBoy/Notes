@@ -1,7 +1,7 @@
 {
   "name": "notes",
   "version": "1.0.0",
-  "description": "",
+  "description": "A simple note-taking application built with Electron",
   "main": "index.js",
   "scripts": {
     "start": "electron .",
@@ -38,7 +38,10 @@
     }
   },
   "keywords": [],
-  "author": "",
+  "author": {
+    "name": "Steyon",
+    "email": "notes@steyon.dev"
+  },
   "license": "ISC",
   "devDependencies": {
     "electron": "^40.2.1",

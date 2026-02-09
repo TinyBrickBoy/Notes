@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notiz App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+  <style>
+    #titlebar {
+      -webkit-app-region: drag;
+    }
+    #titlebar button {
+      -webkit-app-region: no-drag;
+    }
+    
+    /* Smooth scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* Smooth transitions */
+    * {
+      transition: background-color 0.2s ease, transform 0.1s ease;
+    }
+
+    /* Textarea auto-grow effect */
+    #noteInput {
+      min-height: 200px;
+    }
+
+    /* Note item hover effect */
+    .note-item {
+      position: relative;
+      overflow: hidden;
+    }
+    .note-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 4px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      transform: scaleY(0);
+      transition: transform 0.2s ease;
+    }
+    .note-item:hover::before,
+    .note-item.active::before {
+      transform: scaleY(1);
+    }
+
+    /* Empty state illustration */
+    .empty-state {
+      opacity: 0;
+      animation: fadeIn 0.5s ease forwards;
+    }
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen flex flex-col select-none">
+  <!-- Titel-Leiste -->
+  <header id="titlebar" class="w-full flex justify-between items-center bg-white/90 backdrop-blur-lg px-6 py-3 shadow-sm border-b border-gray-200 flex-shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md">
+        <i data-feather="edit-3" class="stroke-white w-4 h-4"></i>
+      </div>
+      <h1 class="text-gray-800 font-bold text-lg select-none">Notizen</h1>
+    </div>
+    <div class="flex gap-1">
+      <button id="minimizeBtn" aria-label="Minimieren"
+        class="w-10 h-8 flex justify-center items-center hover:bg-gray-100 rounded-md transition-all">
+        <i data-feather="minus" class="stroke-gray-600 w-4 h-4" style="stroke-width:2.5"></i>
+      </button>
+      <button id="closeBtn" aria-label="Schließen"
+        class="w-10 h-8 flex justify-center items-center hover:bg-red-50 rounded-md transition-all group">
+        <i data-feather="x" class="stroke-gray-600 group-hover:stroke-red-600 w-4 h-4" style="stroke-width:2.5"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Hauptbereich 2-spaltig -->
+  <main class="flex flex-grow overflow-hidden">
+    <!-- Sidebar links -->
+    <nav class="w-80 bg-white/80 backdrop-blur-sm border-r border-gray-200 overflow-y-auto flex flex-col shadow-sm">
+      <div class="sticky top-0 bg-white/95 backdrop-blur-md z-10 border-b border-gray-200">
+        <div class="p-5 pb-4">
+          <h2 class="text-lg font-bold text-gray-800 mb-1 select-none">Meine Notizen</h2>
+          <p class="text-sm text-gray-500 select-none" id="notesCount">0 Notizen</p>
+        </div>
+      </div>
+      
+      <ul id="notesList" role="list" aria-live="polite" aria-label="Liste der gespeicherten Notizen" class="flex-1">
+        <!-- Notizen als Listenelemente kommen hier -->
+      </ul>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state flex-1 flex flex-col items-center justify-center p-8 text-center hidden">
+        <div class="w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center mb-4">
+          <i data-feather="file-text" class="stroke-indigo-400 w-10 h-10"></i>
+        </div>
+        <h3 class="text-gray-700 font-semibold mb-2">Noch keine Notizen</h3>
+        <p class="text-gray-500 text-sm">Erstelle deine erste Notiz, um loszulegen</p>
+      </div>
+    </nav>
+
+    <!-- Bearbeitungsbereich rechts -->
+    <section class="flex-1 bg-gradient-to-br from-white to-gray-50 p-10 overflow-auto flex flex-col">
+      <div class="max-w-4xl w-full mx-auto flex-1 flex flex-col">
+        <!-- Editor Header -->
+        <div class="mb-6">
+          <h3 class="text-2xl font-bold text-gray-800 mb-2" id="editorTitle">Neue Notiz</h3>
+          <div class="flex items-center gap-3 text-sm text-gray-500">
+            <div class="flex items-center gap-1.5">
+              <i data-feather="calendar" class="w-4 h-4"></i>
+              <span id="currentDate"></span>
+            </div>
+            <span class="w-1 h-1 bg-gray-300 rounded-full"></span>
+            <div class="flex items-center gap-1.5">
+              <i data-feather="type" class="w-4 h-4"></i>
+              <span id="charCount">0 Zeichen</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Textarea -->
+        <div class="flex-1 mb-6">
+          <textarea id="noteInput" 
+            placeholder="Beginne mit dem Schreiben..."
+            class="w-full h-full resize-none p-6 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all text-gray-800 text-base leading-relaxed shadow-sm bg-white"
+            aria-label="Notiz eingeben"></textarea>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3">
+          <button id="saveBtn"
+            class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] text-white text-base font-semibold rounded-xl py-4 shadow-lg hover:shadow-xl transition-all focus:ring-4 focus:ring-indigo-300 focus:outline-none"
+            aria-label="Notiz speichern">
+            <i data-feather="save" class="w-5 h-5"></i> 
+            <span>Speichern</span>
+          </button>
+          <button id="cancelEditBtn"
+            class="flex items-center justify-center gap-2 px-6 bg-white hover:bg-gray-50 border-2 border-gray-200 text-gray-700 text-base font-semibold rounded-xl py-4 shadow-sm hover:shadow transition-all focus:ring-4 focus:ring-gray-200 focus:outline-none hidden"
+            aria-label="Bearbeitung abbrechen">
+            <i data-feather="x" class="w-5 h-5"></i>
+            <span>Abbrechen</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="renderer.js"></script>
+  <script>
+    feather.replace();
+    
+    // Aktuelles Datum anzeigen
+    const updateDate = () => {
+      const now = new Date();
+      const options = { day: 'numeric', month: 'long', year: 'numeric' };
+      document.getElementById('currentDate').textContent = now.toLocaleDateString('de-DE', options);
+    };
+    updateDate();
+
+    // Zeichenzähler
+    const noteInput = document.getElementById('noteInput');
+    const charCount = document.getElementById('charCount');
+    noteInput.addEventListener('input', () => {
+      const count = noteInput.value.length;
+      charCount.textContent = `${count} Zeichen`;
+    });
+  </script>
+</body>
+</html>

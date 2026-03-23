@@ -1,5 +1,4 @@
 name: Build
-
 on:
   push:
     branches: [ main, master ]
@@ -7,41 +6,38 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
-permissions:
-  contents: write
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      
+
       - name: Install dependencies
         run: npm install
-      
+
       - name: Build for Linux
         if: matrix.os == 'ubuntu-latest'
         run: npm run build -- --linux
-      
+
       - name: Build for Windows
         if: matrix.os == 'windows-latest'
         run: npm run build -- --win
-      
+
       - name: Build for macOS
         if: matrix.os == 'macos-latest'
         run: npm run build -- --mac
-      
+
       - name: Upload Linux artifacts
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
@@ -51,7 +47,7 @@ jobs:
             dist/*.AppImage
             dist/*.deb
             dist/*.rpm
-      
+
       - name: Upload Windows artifacts
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
@@ -60,7 +56,7 @@ jobs:
           path: |
             dist/*.exe
             dist/*.zip
-      
+
       - name: Upload macOS artifacts
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
@@ -69,38 +65,3 @@ jobs:
           path: |
             dist/*.dmg
             dist/*.zip
-  
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    
-    permissions:
-      contents: write
-    
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-      
-      - name: Get current date
-        id: date
-        run: echo "date=$(date +'%Y%m%d-%H%M%S')" >> $GITHUB_OUTPUT
-      
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: build-${{ steps.date.outputs.date }}
-          name: Build ${{ steps.date.outputs.date }}
-          body: |
-            Automated release from successful build
-            
-            Commit: ${{ github.sha }}
-            Branch: ${{ github.ref_name }}
-          files: |
-            linux-build/*
-            windows-build/*
-            macos-build/*
-          draft: false
-          prerelease: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
